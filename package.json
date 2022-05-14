@@ -5,8 +5,9 @@
   "main": "index.ts",
   "scripts": {
     "test": "jest",
-    "start": "npx ts-node index.ts",
-    "deploy-commands": "npx ts-node deploy-commands.ts"
+    "start": "npx ts-node src/index.ts",
+    "deploy-commands": "npx ts-node deploy-commands.ts",
+    "dev": "npx nodemon"
   },
   "author": "sinh",
   "license": "ISC",
