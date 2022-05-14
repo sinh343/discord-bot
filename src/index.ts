@@ -1,41 +1,77 @@
 import 'dotenv/config'
-import { Client, Intents, Role, TextChannel } from "discord.js"
+import { Client, Guild, Intents, Role, TextChannel } from "discord.js"
 
-interface EmojiConfig {
-  [key: string]: {
-    [key: string]: {
-      nameOfRoleToApply: string
+interface ReactionBotConfig {
+  [guildId: string]: {
+    [channelId: string]: {
+      [messageId: string]: {
+        [emojiName: string]: {
+          nameOfRoleToApply: string
+        }
+      }
     }
   }
 }
 
-// Create a new client instance
+const reactionBotConfig: ReactionBotConfig = {
+  "403626881649475584": {
+    "974980882702139402": {
+      "974986807542439987": {
+        "4882_EpicBruh": { nameOfRoleToApply: "dnd role" }
+      }
+    }
+  },
+  "964205068935127120": {
+    "966422654473089034": {
+      "966427064188145724": {
+        "underage": { nameOfRoleToApply: "Over 18" }
+      },
+      "966427071469457510": {
+        "blue_book": { nameOfRoleToApply: "Back Up DM" }
+      },
+      "966431504546811946": {
+        "book": { nameOfRoleToApply: "DM" }
+      },
+    }
+  }
+}
+
 const client = new Client({
   intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS]
 });
 
-const guildsToWatch = [
-  "403626881649475584", // 49 gamerz
-  "964205068935127120" // lobo dnd server
-]
 
-const channelsToWatch = [
-  "974980882702139402", // 49 gamerz test channel
-  "966422654473089034", // lobo role-requets
-];
 
-const messagesToWatch = [
-  "974986807542439987", // debug message in 49 gamerz
-  "966427064188145724", // 18+
-  "966427071469457510", // backup dm
-  "966431504546811946" // dm
-];
-
-const emojiConfig: EmojiConfig = {
-  "403626881649475584": {
-    "4882_EpicBruh": { nameOfRoleToApply: "dnd role" }
+const { guildsToWatch, channelsToWatch } = Object.keys(reactionBotConfig).reduce((acc, guildId) => {
+  return {
+    guildsToWatch: [...acc.guildsToWatch, guildId],
+    channelsToWatch: [
+      ...acc.channelsToWatch,
+      ...Object.keys(reactionBotConfig[guildId])
+    ]
   }
+}, { guildsToWatch: [] as string[], channelsToWatch: [] as string[] })
+
+
+const getRoleFromGuild = (guild: Guild, roleName: string): Role => {
+  const role: Role | undefined = guild.roles.cache.find(role => role.name === roleName);
+  if (!role) {
+    throw Error(`no role matching '${roleName}' on server ${guild.name}`);
+  }
+  return role;
 }
+
+const getMemberFromGuild = (guild: Guild, username: string | null) => {
+  if (!username) {
+    throw Error("no username given")
+  }
+  const member = guild.members.cache.find(member => member.user.username === username);
+  if (!member) {
+    throw Error(`no username matching '${username}' on server ${guild.name}`);
+  }
+  return member;
+}
+
 // When the client is ready, find channels that we care about and load all the messages into cache
 client.once('ready', async () => {
   console.log('Ready!');
@@ -46,62 +82,41 @@ client.once('ready', async () => {
 });
 
 client.on('messageReactionAdd', (reaction, user) => {
-  if (messagesToWatch.includes(reaction.message.id)) {
-    const guild = reaction.message.guild;
-    if (!guild) {
-      return console.error("error retrieveing discord server, no server found")
-    }
-    const emojiName = reaction.emoji.name;
-    if (!emojiName) {
-      return console.error("reaction emoji not found")
-    }
-    const config = emojiConfig[guild.id][emojiName]
-    if (config) {
-      const role: Role | undefined = guild.roles.cache.find(role => role.name === config.nameOfRoleToApply)
-      if (!role) {
-        return console.error(`no role found on server '${reaction.message.guild?.name}' matching name '${config.nameOfRoleToApply}'`)
-      }
-      const member = reaction.message.member;
-      if (!member) {
-        return console.error("failed to find member from reaction")
-      }
-      member.roles.add(role)
-      console.log(`${role.name} added to ${member.user.username}`)
-    }
+  const guild = reaction.message.guild;
+  const channel = reaction.message.channel;
+  const message = reaction.message;
+  const emojiName = reaction.emoji.name;
 
-  } else {
-    console.log("reaction to something else")
+  if (!guild || !emojiName || !channel || !message) {
+    throw Error("required inputs could not be calculated")
+  }
+
+  const config = reactionBotConfig[guild.id][channel.id][message.id][emojiName]
+
+  if (config) {
+    const role = getRoleFromGuild(guild, config.nameOfRoleToApply)
+    const member = reaction.message.member || getMemberFromGuild(guild, user?.username)
+    member.roles.add(role)
+    console.log(`${role.name} added to ${member.user.username}`)
   }
 });
 
 client.on('messageReactionRemove', (reaction, user) => {
-  if (messagesToWatch.includes(reaction.message.id)) {
-    const guild = reaction.message.guild;
-    if (!guild) {
-      return console.error("error retrieveing discord server, no server found")
-    }
-    const emojiName = reaction.emoji.name;
-    if (!emojiName) {
-      return console.error("reaction emoji not found")
-    }
+  const guild = reaction.message.guild;
+  const channel = reaction.message.channel;
+  const message = reaction.message;
+  const emojiName = reaction.emoji.name;
 
-    const config = emojiConfig[guild.id][emojiName]
-    if (config) {
-      const role: Role | undefined = guild.roles.cache.find(role => role.name === config.nameOfRoleToApply)
-      if (!role) {
-        return console.error(`no role found on server '${reaction.message.guild?.name}' matching name '${config.nameOfRoleToApply}'`)
-      }
-      console.log(user)
-      const member = guild.members.cache.find(member => member.user.username === user.username)
-      if (!member) {
-        return console.error(`failed to find member with username '${user.username}' from server '${guild.name}'`)
-      }
-      member.roles.remove(role)
-      console.log(`${role.name} removed from ${member.user.username}`)
-    }
+  if (!guild || !emojiName || !channel || !message) {
+    throw Error("required inputs could not be calculated")
+  }
 
-  } else {
-    console.log("reaction to something else")
+  const config = reactionBotConfig[guild.id][channel.id][message.id][emojiName]
+  if (config) {
+    const role = getRoleFromGuild(guild, config.nameOfRoleToApply);
+    const member = getMemberFromGuild(guild, user?.username);
+    member.roles.remove(role)
+    console.log(`${role.name} removed from ${member.user.username}`)
   }
 });
 
