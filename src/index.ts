@@ -79,44 +79,53 @@ client.once('ready', async () => {
   const guilds = guildsToWatch.map(guildId => client.guilds.cache.get(guildId))
   await Promise.all(channels.map(channel => channel.messages.fetch()))
   await Promise.all(guilds.map(guild => guild?.roles.fetch()))
+  await Promise.all(guilds.map(guild => guild?.members.fetch()))
 });
 
 client.on('messageReactionAdd', (reaction, user) => {
-  const guild = reaction.message.guild;
-  const channel = reaction.message.channel;
-  const message = reaction.message;
-  const emojiName = reaction.emoji.name;
+  try {
+    const guild = reaction.message.guild;
+    const channel = reaction.message.channel;
+    const message = reaction.message;
+    const emojiName = reaction.emoji.name;
 
-  if (!guild || !emojiName || !channel || !message) {
-    throw Error("required inputs could not be calculated")
-  }
+    if (!guild || !emojiName || !channel || !message) {
+      throw Error("required inputs could not be calculated")
+    }
 
-  const config = reactionBotConfig[guild.id][channel.id][message.id][emojiName]
+    const config = reactionBotConfig[guild.id][channel.id][message.id][emojiName]
 
-  if (config) {
-    const role = getRoleFromGuild(guild, config.nameOfRoleToApply)
-    const member = reaction.message.member || getMemberFromGuild(guild, user?.username)
-    member.roles.add(role)
-    console.log(`${role.name} added to ${member.user.username}`)
+    if (config) {
+      const role = getRoleFromGuild(guild, config.nameOfRoleToApply)
+      const member = reaction.message.member || getMemberFromGuild(guild, user?.username)
+      member.roles.add(role)
+      console.log(`${role.name} added to ${member.user.username}`)
+    }
+  } catch (error) {
+    console.error(error)
   }
 });
 
 client.on('messageReactionRemove', (reaction, user) => {
-  const guild = reaction.message.guild;
-  const channel = reaction.message.channel;
-  const message = reaction.message;
-  const emojiName = reaction.emoji.name;
+  try {
+    const guild = reaction.message.guild;
+    const channel = reaction.message.channel;
+    const message = reaction.message;
+    const emojiName = reaction.emoji.name;
 
-  if (!guild || !emojiName || !channel || !message) {
-    throw Error("required inputs could not be calculated")
-  }
+    if (!guild || !emojiName || !channel || !message) {
+      throw Error("required inputs could not be calculated")
+    }
 
-  const config = reactionBotConfig[guild.id][channel.id][message.id][emojiName]
-  if (config) {
-    const role = getRoleFromGuild(guild, config.nameOfRoleToApply);
-    const member = getMemberFromGuild(guild, user?.username);
-    member.roles.remove(role)
-    console.log(`${role.name} removed from ${member.user.username}`)
+    const config = reactionBotConfig[guild.id][channel.id][message.id][emojiName]
+    if (config) {
+      const role = getRoleFromGuild(guild, config.nameOfRoleToApply);
+      const member = getMemberFromGuild(guild, user?.username);
+      member.roles.remove(role)
+      console.log(`${role.name} removed from ${member.user.username}`)
+    }
+  } catch (error) {
+    console.error(error)
   }
 });
 
