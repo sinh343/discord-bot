@@ -1,0 +1,23 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "bot to add roles/send messages on discord",
+  "main": "index.ts",
+  "scripts": {
+    "test": "jest",
+    "start": "npx ts-node index.ts",
+    "deploy-commands": "npx ts-node deploy-commands.ts"
+  },
+  "author": "sinh",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/builders": "^0.13.0",
+    "@discordjs/rest": "^0.4.1",
+    "discord-api-types": "^0.32.1",
+    "discord.js": "^13.7.0",
+    "dotenv": "^16.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.6.4"
+  }
+}
