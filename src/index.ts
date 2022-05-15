@@ -24,13 +24,13 @@ const reactionBotConfig: ReactionBotConfig = {
   "964205068935127120": {
     "966422654473089034": {
       "966427064188145724": {
-        "underage": { nameOfRoleToApply: "Over 18" }
+        "🔞": { nameOfRoleToApply: "Over 18" }
       },
       "966427071469457510": {
-        "blue_book": { nameOfRoleToApply: "Back Up DM" }
+        "📘": { nameOfRoleToApply: "Back Up DM" }
       },
       "966431504546811946": {
-        "book": { nameOfRoleToApply: "DM" }
+        "📖": { nameOfRoleToApply: "DM" }
       },
     }
   }
@@ -88,7 +88,7 @@ client.on('messageReactionAdd', (reaction, user) => {
     const channel = reaction.message.channel;
     const message = reaction.message;
     const emojiName = reaction.emoji.name;
-
+    console.log(reaction.emoji.identifier, emojiName);
     if (!guild || !emojiName || !channel || !message) {
       throw Error("required inputs could not be calculated")
     }
