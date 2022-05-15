@@ -130,6 +130,6 @@ client.on('messageReactionRemove', (reaction, user) => {
 });
 
 // Login to Discord with your client's token
-client.login(process.env.DISCROD_BOT_TOKEN);
+client.login(process.env.DISCORD_BOT_TOKEN);
 
 
