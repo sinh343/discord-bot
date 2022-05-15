@@ -88,7 +88,7 @@ client.on('messageReactionAdd', (reaction, user) => {
     const channel = reaction.message.channel;
     const message = reaction.message;
     const emojiName = reaction.emoji.name;
-    console.log(reaction.emoji.identifier, emojiName);
+
     if (!guild || !emojiName || !channel || !message) {
       throw Error("required inputs could not be calculated")
     }
