@@ -13,28 +13,7 @@ interface ReactionBotConfig {
   }
 }
 
-const reactionBotConfig: ReactionBotConfig = {
-  "403626881649475584": {
-    "974980882702139402": {
-      "974986807542439987": {
-        "4882_EpicBruh": { nameOfRoleToApply: "dnd role" }
-      }
-    }
-  },
-  "964205068935127120": {
-    "966422654473089034": {
-      "966427064188145724": {
-        "🔞": { nameOfRoleToApply: "Over 18" }
-      },
-      "966427071469457510": {
-        "📘": { nameOfRoleToApply: "Back Up DM" }
-      },
-      "966431504546811946": {
-        "📖": { nameOfRoleToApply: "DM" }
-      },
-    }
-  }
-}
+const reactionBotConfig: ReactionBotConfig = require('./assets/reactionBotConfig.json');
 
 const client = new Client({
   intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS, Intents.FLAGS.GUILD_MEMBERS]
@@ -74,31 +53,36 @@ const getMemberFromGuild = (guild: Guild, username: string | null) => {
 
 // When the client is ready, find channels that we care about and load all the messages into cache
 client.once('ready', async () => {
+  try {
+    const channels = channelsToWatch.map(channelId => client.channels.cache.get(channelId) as TextChannel).filter(Boolean)
+    const guilds = guildsToWatch.map(guildId => client.guilds.cache.get(guildId))
+    await Promise.all(channels.map(channel => channel.messages.fetch()))
+    await Promise.all(guilds.map(guild => guild?.roles.fetch()))
+    await Promise.all(guilds.map(guild => guild?.members.fetch()))
+  } catch (error) {
+    console.error(error)
+    return console.error('failed to startup')
+  }
   console.log('Ready!');
-  const channels = channelsToWatch.map(channelId => client.channels.cache.get(channelId) as TextChannel).filter(Boolean)
-  const guilds = guildsToWatch.map(guildId => client.guilds.cache.get(guildId))
-  await Promise.all(channels.map(channel => channel.messages.fetch()))
-  await Promise.all(guilds.map(guild => guild?.roles.fetch()))
-  await Promise.all(guilds.map(guild => guild?.members.fetch()))
+
 });
 
-client.on('messageReactionAdd', (reaction, user) => {
+client.on('messageReactionAdd', async (reaction, user) => {
   try {
     const guild = reaction.message.guild;
     const channel = reaction.message.channel;
     const message = reaction.message;
     const emojiName = reaction.emoji.name;
-
     if (!guild || !emojiName || !channel || !message) {
       throw Error("required inputs could not be calculated")
     }
-
+    console.log(guild.id, channel.id, message.id, emojiName, reactionBotConfig[guild.id][channel.id][message.id][emojiName])
     const config = reactionBotConfig[guild.id][channel.id][message.id][emojiName]
 
     if (config) {
       const role = getRoleFromGuild(guild, config.nameOfRoleToApply)
-      const member = reaction.message.member || getMemberFromGuild(guild, user?.username)
-      member.roles.add(role)
+      const member = getMemberFromGuild(guild, user?.username)
+      await member.roles.add(role)
       console.log(`${role.name} added to ${member.user.username}`)
     }
   } catch (error) {
@@ -106,7 +90,7 @@ client.on('messageReactionAdd', (reaction, user) => {
   }
 });
 
-client.on('messageReactionRemove', (reaction, user) => {
+client.on('messageReactionRemove', async (reaction, user) => {
   try {
     const guild = reaction.message.guild;
     const channel = reaction.message.channel;
@@ -116,12 +100,12 @@ client.on('messageReactionRemove', (reaction, user) => {
     if (!guild || !emojiName || !channel || !message) {
       throw Error("required inputs could not be calculated")
     }
-
+    console.log(guild.id, channel.id, message.id, emojiName, reactionBotConfig[guild.id][channel.id][message.id][emojiName])
     const config = reactionBotConfig[guild.id][channel.id][message.id][emojiName]
     if (config) {
       const role = getRoleFromGuild(guild, config.nameOfRoleToApply);
       const member = getMemberFromGuild(guild, user?.username);
-      member.roles.remove(role)
+      await member.roles.remove(role)
       console.log(`${role.name} removed from ${member.user.username}`)
     }
   } catch (error) {
@@ -129,7 +113,5 @@ client.on('messageReactionRemove', (reaction, user) => {
   }
 });
 
-// Login to Discord with your client's token
+ // Login to Discord with your client's token
 client.login(process.env.DISCORD_BOT_TOKEN);
-
-
